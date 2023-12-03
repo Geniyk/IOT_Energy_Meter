@@ -1,0 +1,57 @@
+#include "EmonLib.h"
+#include <EEPROM.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+EnergyMonitor emon;
+#define vCalibration 83.3
+const int sensorIn = 34;
+int mVperAmp = 185;
+int Watt = 0;
+double Voltage = 0;
+double VRMS = 0;
+double AmpsRMS = 0;
+float getCurrent() {
+Voltage = getVPP();
+VRMS = (Voltage / 2.0) * 0.707;
+AmpsRMS = ((VRMS * 1000) / mVperAmp);
+Serial.print(AmpsRMS);
+Serial.print(" Amps RMS --- ");
+Watt = (AmpsRMS * 240 / 1.2);
+Serial.print(Watt);
+Serial.println(" Watts");
+return AmpsRMS;
+}
+float getVPP() {
+float result;
+int readValue;
+int maxValue = 0;
+int minValue = 4096;
+uint32_t start_time = millis();
+while ((millis() - start_time) < 1000) {
+readValue = analogRead(sensorIn);
+if (readValue > maxValue) {
+maxValue = readValue;
+}
+if (readValue < minValue) {
+minValue = readValue;
+}
+}
+result = ((maxValue - minValue) * 3.3) / 4096.0;
+return result;
+}
+
+void setup() {
+Serial.begin(115200);
+emon.voltage(35, vCalibration, 0);
+Serial.print("IoT Energy");
+Serial.println("Meter");
+delay(3000);
+}
+
+void loop() {
+Serial.print(emon.Vrms);
+Serial.print(" ");
+Serial.print(getVPP());
+Serial.print(" ");
+Serial.println(getCurrent());
+}
